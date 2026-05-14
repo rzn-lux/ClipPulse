@@ -1,0 +1,31 @@
+'use client'
+
+import { useState } from 'react'
+import { Sidebar } from './sidebar'
+import { Header } from './header'
+import { cn } from '@/lib/utils'
+
+interface DashboardLayoutProps {
+  children: React.ReactNode
+}
+
+export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Sidebar />
+      <Header sidebarCollapsed={sidebarCollapsed} />
+      <main 
+        className={cn(
+          "pt-16 transition-all duration-300 min-h-screen",
+          sidebarCollapsed ? "pl-[72px]" : "pl-[240px]"
+        )}
+      >
+        <div className="p-6">
+          {children}
+        </div>
+      </main>
+    </div>
+  )
+}
