@@ -1,5 +1,5 @@
 // Platform types
-export type Platform = 'youtube'
+export type Platform = 'tiktok' | 'instagram' | 'youtube' | 'twitter'
 
 export interface Video {
   id: string
@@ -98,7 +98,10 @@ export const viewsOverTime = Array.from({ length: 30 }, (_, i) => {
   date.setDate(date.getDate() - (29 - i))
   return {
     date: date.toISOString().split('T')[0],
-    youtube: 0
+    tiktok: 0,
+    instagram: 0,
+    youtube: 0,
+    twitter: 0
   }
 })
 
@@ -113,7 +116,7 @@ export const trendingSounds = [
     artist: 'aestheticvibes',
     usageCount: 2847293,
     growthPercent: 234,
-    platform: 'youtube' as Platform
+    platform: 'tiktok' as Platform
   },
   {
     id: '2',
@@ -121,7 +124,7 @@ export const trendingSounds = [
     artist: 'Sabrina Carpenter',
     usageCount: 1928374,
     growthPercent: 156,
-    platform: 'youtube' as Platform
+    platform: 'instagram' as Platform
   },
   {
     id: '3',
@@ -129,7 +132,7 @@ export const trendingSounds = [
     artist: 'Billie Eilish',
     usageCount: 1574829,
     growthPercent: 189,
-    platform: 'youtube' as Platform
+    platform: 'tiktok' as Platform
   },
   {
     id: '4',
@@ -145,7 +148,7 @@ export const trendingSounds = [
     artist: 'Billie Eilish',
     usageCount: 982374,
     growthPercent: 167,
-    platform: 'youtube' as Platform
+    platform: 'tiktok' as Platform
   }
 ]
 
@@ -156,21 +159,21 @@ export const trendingHooks = [
     text: 'POV: You finally...',
     usageCount: 847293,
     avgEngagement: 8.4,
-    platform: 'youtube' as Platform
+    platform: 'tiktok' as Platform
   },
   {
     id: '2',
     text: 'I tried [X] for 30 days...',
     usageCount: 629384,
     avgEngagement: 7.8,
-    platform: 'youtube' as Platform
+    platform: 'instagram' as Platform
   },
   {
     id: '3',
     text: 'Stop scrolling if you...',
     usageCount: 584729,
     avgEngagement: 9.2,
-    platform: 'youtube' as Platform
+    platform: 'tiktok' as Platform
   },
   {
     id: '4',
@@ -184,7 +187,7 @@ export const trendingHooks = [
     text: 'Why nobody talks about...',
     usageCount: 384729,
     avgEngagement: 8.1,
-    platform: 'youtube' as Platform
+    platform: 'twitter' as Platform
   }
 ]
 

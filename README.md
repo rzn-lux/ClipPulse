@@ -1,2 +1,0 @@
-# ClipPulse
-ClipPulse

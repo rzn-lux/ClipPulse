@@ -1,32 +1,20 @@
 import { NextResponse } from 'next/server'
+import { auth } from '@/auth'
 
 export const dynamic = 'force-dynamic'
 
-function normalizeHandle(customUrl: string | undefined | null): string {
-  if (!customUrl) return ''
-  const trimmed = customUrl.trim().replace(/^\/+/, '').replace(/^(c\/|user\/|channel\/)/i, '')
-  if (!trimmed) return ''
-  return trimmed.startsWith('@') ? trimmed : `@${trimmed}`
-}
+export async function GET() {
+  const session = await auth()
 
-export async function GET(req: Request) {
-  const authHeader = req.headers.get('authorization')
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-
-  if (!token) {
-    return NextResponse.json({ error: 'Missing access token' }, { status: 401 })
+  if (!session?.accessToken) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
   // Fetch channel stats
   const channelRes = await fetch(
     'https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true',
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${session.accessToken}` } }
   )
-
-  if (channelRes.status === 401) {
-    return NextResponse.json({ error: 'Token expired' }, { status: 401 })
-  }
-
   const channelData = await channelRes.json()
   const channel = channelData.items?.[0]
 
@@ -37,7 +25,7 @@ export async function GET(req: Request) {
   // Fetch recent videos (up to 25)
   const searchRes = await fetch(
     'https://www.googleapis.com/youtube/v3/search?part=snippet&forMine=true&type=video&maxResults=25&order=date',
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${session.accessToken}` } }
   )
   const searchData = await searchRes.json()
   const videoIds = (searchData.items ?? []).map((v: any) => v.id.videoId).join(',')
@@ -46,7 +34,7 @@ export async function GET(req: Request) {
   if (videoIds) {
     const videoRes = await fetch(
       `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoIds}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${session.accessToken}` } }
     )
     const videoData = await videoRes.json()
     videos = (videoData.items ?? []).map((v: any) => {
@@ -78,7 +66,7 @@ export async function GET(req: Request) {
     totalViews: parseInt(channel.statistics.viewCount ?? '0'),
     videoCount: parseInt(channel.statistics.videoCount ?? '0'),
     channelName: channel.snippet.title,
-    handle: normalizeHandle(channel.snippet.customUrl),
+    handle: channel.snippet.customUrl ?? '',
     avatar: channel.snippet.thumbnails?.default?.url ?? '',
     videos,
   })

@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAccountStore } from '@/lib/account-store'
-import { fetchYoutubeStatsForAccount } from '@/lib/youtube-client'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
 
 function CallbackContent() {
   const router = useRouter()
-  const { connectAccount, setActiveChannel, setYoutubeStatsForChannel, connectedAccounts } = useAccountStore()
+  const searchParams = useSearchParams()
+  const platform = searchParams.get('platform') ?? 'youtube'
+  const { connectAccount } = useAccountStore()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('Fetching your channel...')
 
@@ -25,10 +26,8 @@ function CallbackContent() {
           throw new Error(responseData.error ?? 'Failed to fetch channel')
         }
 
-        const alreadyConnected = connectedAccounts.some(a => a.channelId === responseData.channelId)
-
-        const account = {
-          platform: 'youtube' as const,
+        connectAccount({
+          platform: 'youtube',
           channelId: responseData.channelId,
           channelName: responseData.channelName,
           handle: responseData.handle,
@@ -37,24 +36,10 @@ function CallbackContent() {
           totalViews: 0,
           videoCount: responseData.videoCount,
           connectedAt: new Date().toISOString(),
-          accessToken: responseData.accessToken,
-          refreshToken: responseData.refreshToken ?? undefined,
-          expiresAt: responseData.expiresAt ?? undefined,
-        }
-
-        connectAccount(account)
-        setActiveChannel(account.channelId)
-
-        // Fire-and-forget initial stats sync so the dashboard renders immediately.
-        fetchYoutubeStatsForAccount(account)
-          .then(stats => setYoutubeStatsForChannel(account.channelId, stats))
-          .catch(() => { /* dashboard will retry */ })
+        })
 
         setStatus('success')
-        setMessage(alreadyConnected
-          ? `Refreshed ${responseData.handle}`
-          : `Connected ${responseData.handle} successfully!`
-        )
+        setMessage(`Connected ${responseData.handle} successfully!`)
         setTimeout(() => router.push('/settings'), 1500)
       } catch (err: any) {
         setStatus('error')
@@ -64,7 +49,6 @@ function CallbackContent() {
     }
 
     fetchChannel()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

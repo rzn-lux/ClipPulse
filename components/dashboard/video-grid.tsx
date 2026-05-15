@@ -13,7 +13,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 const platformBadges: Record<Platform, { name: string; color: string }> = {
-  youtube: { name: 'YouTube', color: 'bg-youtube' },
+  tiktok: { name: 'TikTok', color: 'bg-tiktok' },
+  instagram: { name: 'Reels', color: 'bg-instagram' },
+  youtube: { name: 'Shorts', color: 'bg-youtube' },
+  twitter: { name: 'X', color: 'bg-twitter' },
 }
 
 function formatNumber(num: number): string {
@@ -56,7 +59,7 @@ function VideoCard({ video, index, onClick }: VideoCardProps) {
             "absolute inset-0",
             index % 4 === 0 && "bg-gradient-to-br from-gradient-purple/30 to-gradient-pink/30",
             index % 4 === 1 && "bg-gradient-to-br from-gradient-pink/30 to-gradient-orange/30",
-            index % 4 === 2 && "bg-gradient-to-br from-youtube/30 to-gradient-purple/30",
+            index % 4 === 2 && "bg-gradient-to-br from-tiktok/30 to-gradient-purple/30",
             index % 4 === 3 && "bg-gradient-to-br from-youtube/30 to-gradient-orange/30"
           )} />
         )}

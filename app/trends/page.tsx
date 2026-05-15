@@ -3,12 +3,10 @@
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccountStore } from '@/lib/account-store'
-import { fetchViralTrends, type ViralTrends } from '@/lib/youtube-client'
-import { TrendingUp, Music, Hash, Flame, Info, Sparkles, BarChart3, RefreshCw } from 'lucide-react'
+import { TrendingUp, Music, Hash, Flame, ArrowUp, Info, Sparkles, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
@@ -62,36 +60,11 @@ function analyzePerformance(videos: { title: string; views: number; likes: numbe
   }
 }
 
-type TrendsTab = 'yours' | 'viral'
-
 export default function TrendsPage() {
   const { youtubeStats, connectedAccounts } = useAccountStore()
   const [mounted, setMounted] = useState(false)
-  const [activeTab, setActiveTab] = useState<TrendsTab>('yours')
-  const [viral, setViral] = useState<ViralTrends | null>(null)
-  const [viralLoading, setViralLoading] = useState(false)
-  const [viralError, setViralError] = useState<string | null>(null)
-
+  
   useEffect(() => { setMounted(true) }, [])
-
-  useEffect(() => {
-    if (activeTab !== 'viral' || viral || viralLoading) return
-    setViralLoading(true)
-    setViralError(null)
-    fetchViralTrends()
-      .then(setViral)
-      .catch((e) => setViralError(e?.message ?? 'Failed to load viral trends'))
-      .finally(() => setViralLoading(false))
-  }, [activeTab, viral, viralLoading])
-
-  const refreshViral = () => {
-    setViralLoading(true)
-    setViralError(null)
-    fetchViralTrends()
-      .then(setViral)
-      .catch((e) => setViralError(e?.message ?? 'Failed to load viral trends'))
-      .finally(() => setViralLoading(false))
-  }
   
   const hasVideos = mounted && (youtubeStats?.videos?.length ?? 0) > 0
   const isConnected = mounted && connectedAccounts.length > 0
@@ -158,64 +131,13 @@ export default function TrendsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Page header */}
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-bold">Trends</h1>
-            <p className="text-muted-foreground mt-1">
-              {activeTab === 'yours'
-                ? `Insights from your ${youtubeStats?.videos?.length ?? 0} most recent videos`
-                : 'The most viral hashtags and sounds on YouTube right now'}
-            </p>
-          </div>
-          {activeTab === 'viral' && (
-            <button
-              onClick={refreshViral}
-              disabled={viralLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 hover:bg-muted transition-colors text-xs text-muted-foreground disabled:opacity-50"
-            >
-              <RefreshCw className={cn('w-3 h-3', viralLoading && 'animate-spin')} />
-              {viralLoading ? 'Loading...' : 'Refresh'}
-            </button>
-          )}
+        <div>
+          <h1 className="text-2xl font-bold">Your Trends</h1>
+          <p className="text-muted-foreground mt-1">
+            Insights from your {youtubeStats?.videos?.length ?? 0} most recent videos
+          </p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg w-fit">
-          {([
-            { id: 'yours' as const, label: 'Your Trends', icon: BarChart3 },
-            { id: 'viral' as const, label: 'Viral on YouTube', icon: Flame },
-          ]).map((tab) => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'relative px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                  isActive ? 'text-secondary-foreground' : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="trendsTabBg"
-                    className="absolute inset-0 bg-background rounded-md shadow-sm"
-                    transition={{ type: 'spring', bounce: 0.2, duration: 0.3 }}
-                  />
-                )}
-                <span className="relative flex items-center gap-2">
-                  <Icon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-
-        {activeTab === 'viral' ? (
-          <ViralPanel viral={viral} loading={viralLoading} error={viralError} />
-        ) : (
-        <>
         {/* Performance Overview */}
         {performanceInsights && (
           <motion.div
@@ -363,154 +285,11 @@ export default function TrendsPage() {
         >
           <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <p>
-            Insights are based on your {youtubeStats?.videos?.length ?? 0} most recent videos.
+            Insights are based on your {youtubeStats?.videos?.length ?? 0} most recent videos. 
             More videos = more accurate trends. Data refreshes when you reconnect your account.
           </p>
         </motion.div>
-        </>
-        )}
       </div>
     </DashboardLayout>
-  )
-}
-
-function formatViews(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`
-  return n.toString()
-}
-
-function ViralPanel({
-  viral,
-  loading,
-  error,
-}: {
-  viral: ViralTrends | null
-  loading: boolean
-  error: string | null
-}) {
-  if (loading && !viral) {
-    return (
-      <div className="glass-card rounded-xl p-12 flex flex-col items-center justify-center">
-        <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin mb-3" />
-        <p className="text-sm text-muted-foreground">Fetching what&apos;s viral on YouTube...</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="glass-card rounded-xl p-8 text-center">
-        <p className="text-sm text-muted-foreground">Couldn&apos;t load viral trends: {error}</p>
-      </div>
-    )
-  }
-
-  if (!viral) return null
-
-  return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      {/* Viral Hashtags */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="glass-card rounded-xl p-6"
-      >
-        <h3 className="font-semibold mb-1 flex items-center gap-2">
-          <Hash className="w-5 h-5 text-gradient-pink" />
-          Viral Hashtags
-        </h3>
-        <p className="text-xs text-muted-foreground mb-4">
-          Most-used hashtags across trending videos in {viral.region}
-        </p>
-        {viral.hashtags.length > 0 ? (
-          <div className="space-y-2">
-            {viral.hashtags.map((h, index) => (
-              <div
-                key={h.tag}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className={cn(
-                    'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0',
-                    index < 3 ? 'bg-gradient-to-r from-gradient-pink to-gradient-orange text-white' : 'bg-muted text-muted-foreground'
-                  )}>
-                    {index + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">#{h.tag}</p>
-                    <p className="text-xs text-muted-foreground">
-                      In {h.count} trending video{h.count > 1 ? 's' : ''}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right flex-shrink-0 ml-2">
-                  <p className="text-sm font-medium">{formatViews(h.totalViews)}</p>
-                  <p className="text-xs text-muted-foreground">total views</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No hashtags found in current trending videos.</p>
-        )}
-      </motion.div>
-
-      {/* Viral Sounds */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="glass-card rounded-xl p-6"
-      >
-        <h3 className="font-semibold mb-1 flex items-center gap-2">
-          <Music className="w-5 h-5 text-gradient-purple" />
-          Viral Sounds
-        </h3>
-        <p className="text-xs text-muted-foreground mb-4">
-          Top trending music tracks on YouTube right now
-        </p>
-        {viral.sounds.length > 0 ? (
-          <div className="space-y-2">
-            {viral.sounds.map((s, index) => (
-              <a
-                key={s.id}
-                href={`https://www.youtube.com/watch?v=${s.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-              >
-                <span className={cn(
-                  'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0',
-                  index < 3 ? 'bg-gradient-to-r from-gradient-purple to-gradient-pink text-white' : 'bg-muted text-muted-foreground'
-                )}>
-                  {index + 1}
-                </span>
-                {s.thumbnail && (
-                  <Image
-                    src={s.thumbnail}
-                    alt={s.title}
-                    width={56}
-                    height={32}
-                    className="rounded object-cover flex-shrink-0"
-                  />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{s.title}</p>
-                  <p className="text-xs text-muted-foreground truncate">{s.channel}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-medium">{formatViews(s.views)}</p>
-                  <p className="text-xs text-muted-foreground">views</p>
-                </div>
-              </a>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No trending music tracks right now.</p>
-        )}
-      </motion.div>
-    </div>
   )
 }

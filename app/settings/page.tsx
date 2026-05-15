@@ -8,27 +8,65 @@ import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import {
   Youtube,
+  Music2,
+  Instagram,
+  Twitter,
   CheckCircle2,
   Trash2,
-  Plus,
+  Rocket,
   Shield,
   FileText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
+type Platform = 'youtube' | 'tiktok' | 'instagram' | 'twitter'
+
+const platformConfigs = [
+  {
+    id: 'youtube' as Platform,
+    label: 'YouTube',
+    icon: Youtube,
+    color: '#FF0000',
+    bg: 'rgba(255,0,0,0.1)',
+    description: 'Connect your YouTube channel to track videos, views, and subscribers.',
+    hasOAuth: true,
+  },
+  {
+    id: 'tiktok' as Platform,
+    label: 'TikTok',
+    icon: Music2,
+    color: '#69C9D0',
+    bg: 'rgba(105,201,208,0.1)',
+    description: 'Track your TikTok videos, likes, and follower growth.',
+    hasOAuth: false,
+  },
+  {
+    id: 'instagram' as Platform,
+    label: 'Instagram',
+    icon: Instagram,
+    color: '#E1306C',
+    bg: 'rgba(225,48,108,0.1)',
+    description: 'Monitor Reels performance and audience engagement on Instagram.',
+    hasOAuth: false,
+  },
+  {
+    id: 'twitter' as Platform,
+    label: 'X (Twitter)',
+    icon: Twitter,
+    color: '#1DA1F2',
+    bg: 'rgba(29,161,242,0.1)',
+    description: 'Analyze your X posts, impressions, and audience growth.',
+    hasOAuth: false,
+  },
+]
+
 export default function SettingsPage() {
-  const {
-    connectedAccounts,
-    activeChannelId,
-    disconnectAccount,
-    setActiveChannel,
-  } = useAccountStore()
-  const youtubeAccounts = connectedAccounts.filter(a => a.platform === 'youtube')
+  const { connectedAccounts: accounts, disconnectAccount } = useAccountStore()
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
 
-  const handleConnect = async () => {
-    const callbackUrl = `${window.location.origin}/auth/callback?platform=youtube`
+  const handleConnect = async (platform: Platform) => {
+    const callbackUrl = `${window.location.origin}/auth/callback?platform=${platform}`
     const csrfRes = await fetch('/api/auth/csrf')
     const { csrfToken } = await csrfRes.json()
 
@@ -54,8 +92,8 @@ export default function SettingsPage() {
 
   const handleDisconnect = async (account: ConnectedAccount) => {
     setDisconnecting(account.channelId)
-    await new Promise(r => setTimeout(r, 400))
-    disconnectAccount(account.channelId)
+    await new Promise(r => setTimeout(r, 600))
+    disconnectAccount(account.platform)
     setDisconnecting(null)
   }
 
@@ -72,97 +110,97 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="glass-card rounded-xl p-6"
         >
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="font-semibold text-lg">YouTube Channels</h2>
-            <span className="text-xs text-muted-foreground">
-              {youtubeAccounts.length} connected
-            </span>
-          </div>
+          <h2 className="font-semibold text-lg mb-1">Connected Accounts</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Connect one or more YouTube channels. Switch between them with the Active toggle.
+            Connect your social platforms to start tracking your content performance.
           </p>
 
           <div className="space-y-3">
-            {youtubeAccounts.map((account) => {
-              const isActive = account.channelId === activeChannelId
-              const isDisconnecting = disconnecting === account.channelId
+            {platformConfigs.map((config) => {
+              const Icon = config.icon
+              const connected = accounts.find(a => a.platform === config.id)
+
               return (
                 <div
-                  key={account.channelId}
-                  className={cn(
-                    'flex items-center gap-4 p-4 rounded-lg border bg-muted/20 transition-colors',
-                    isActive ? 'border-gradient-purple/60' : 'border-border'
-                  )}
+                  key={config.id}
+                  className="flex items-center gap-4 p-4 rounded-lg border border-border bg-muted/20"
                 >
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(255,0,0,0.1)' }}
+                    style={{ background: config.bg }}
                   >
-                    {account.avatar ? (
-                      <Image
-                        src={account.avatar}
-                        alt={account.channelName}
-                        width={28}
-                        height={28}
-                        className="rounded-full"
-                      />
-                    ) : (
-                      <Youtube className="w-5 h-5" style={{ color: '#FF0000' }} />
-                    )}
+                    <Icon className="w-5 h-5" style={{ color: config.color }} />
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm truncate">{account.channelName}</span>
-                      {isActive && (
-                        <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-gradient-purple bg-gradient-purple/10 px-1.5 py-0.5 rounded">
-                          <CheckCircle2 className="w-3 h-3" />
-                          Active
-                        </span>
-                      )}
-                    </div>
+                    {connected ? (
+                      <div className="flex items-center gap-2">
+                        {connected.avatar && (
+                          <Image
+                            src={connected.avatar}
+                            alt={connected.channelName}
+                            width={22}
+                            height={22}
+                            className="rounded-full"
+                          />
+                        )}
+                        <span className="font-medium text-sm">{connected.channelName}</span>
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      </div>
+                    ) : (
+                      <p className="font-medium text-sm">{config.label}</p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                      {account.handle && account.handle.replace(/^@/, '').toLowerCase() !== account.channelName.replace(/\s+/g, '').toLowerCase()
-                        ? `${account.handle} · `
-                        : ''}
-                      Connected {new Date(account.connectedAt).toLocaleDateString()}
+                      {connected
+                        ? `${connected.handle} · Connected ${new Date(connected.connectedAt).toLocaleDateString()}`
+                        : config.description}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {!isActive && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setActiveChannel(account.channelId)}
-                      >
-                        Set active
-                      </Button>
-                    )}
+                  {connected ? (
                     <Button
                       variant="outline"
                       size="sm"
                       className={cn(
-                        'gap-1.5 text-red-500 border-red-500/30 hover:bg-red-500/10',
-                        isDisconnecting && 'opacity-50 pointer-events-none'
+                        "gap-1.5 flex-shrink-0 text-red-500 border-red-500/30 hover:bg-red-500/10",
+                        disconnecting === connected.channelId && "opacity-50 pointer-events-none"
                       )}
-                      onClick={() => handleDisconnect(account)}
+                      onClick={() => handleDisconnect(connected)}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      {isDisconnecting ? 'Removing...' : 'Disconnect'}
+                      {disconnecting === connected.channelId ? 'Removing...' : 'Disconnect'}
                     </Button>
-                  </div>
+                  ) : config.hasOAuth ? (
+                    <Button
+                      size="sm"
+                      className="bg-gradient-to-r from-gradient-purple to-gradient-pink text-white hover:opacity-90 flex-shrink-0"
+                      onClick={() => handleConnect(config.id)}
+                    >
+                      Connect
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground px-3 py-1.5 rounded-md border border-border flex-shrink-0">
+                      Coming soon
+                    </span>
+                  )}
                 </div>
               )
             })}
+          </div>
+        </motion.div>
 
-            <button
-              onClick={handleConnect}
-              className="w-full flex items-center justify-center gap-2 p-4 rounded-lg border border-dashed border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-gradient-purple/50 hover:bg-muted/30 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              {youtubeAccounts.length === 0 ? 'Connect a YouTube channel' : 'Connect another YouTube channel'}
-            </button>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass-card rounded-xl p-5 flex items-start gap-3"
+        >
+          <Rocket className="w-5 h-5 text-gradient-purple flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium">More integrations coming soon</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              TikTok, Instagram, and X connections are in development. YouTube is fully supported now.
+            </p>
           </div>
         </motion.div>
 

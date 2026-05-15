@@ -6,47 +6,35 @@ import { KpiCard } from '@/components/dashboard/kpi-card'
 import { ViewsChart } from '@/components/dashboard/views-chart'
 import { VideoGrid } from '@/components/dashboard/video-grid'
 import { useAccountStore } from '@/lib/account-store'
-import { syncActiveAccount } from '@/lib/youtube-client'
 import { motion } from 'framer-motion'
 import { Link as LinkIcon, Plus, Sparkles, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { cn } from '@/lib/utils'
 
 export default function OverviewPage() {
-  const { connectedAccounts, youtubeStats, activeChannelId, setActiveChannel } = useAccountStore()
+  const { connectedAccounts, youtubeStats, setYoutubeStats, isConnected } = useAccountStore()
   const [mounted, setMounted] = useState(false)
   const [syncing, setSyncing] = useState(false)
-
-  const handleSwitchChannel = async (channelId: string) => {
-    if (channelId === activeChannelId) return
-    setActiveChannel(channelId)
-    setSyncing(true)
-    try {
-      await syncActiveAccount()
-    } catch (e) {
-      console.log('[v0] Failed to fetch YouTube stats:', e)
-    } finally {
-      setSyncing(false)
-    }
-  }
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Auto-fetch stats for the active channel when it changes (or when no stats are cached yet)
+  // Auto-fetch YouTube stats when YouTube is connected
   useEffect(() => {
-    if (mounted && activeChannelId && !youtubeStats) {
+    if (mounted && isConnected('youtube') && !youtubeStats) {
       fetchYoutubeStats()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, activeChannelId])
+  }, [mounted, isConnected('youtube')])
 
   const fetchYoutubeStats = async () => {
     setSyncing(true)
     try {
-      await syncActiveAccount()
+      const res = await fetch('/api/youtube/stats')
+      if (res.ok) {
+        const data = await res.json()
+        setYoutubeStats(data)
+      }
     } catch (e) {
       console.log('[v0] Failed to fetch YouTube stats:', e)
     } finally {
@@ -80,7 +68,7 @@ export default function OverviewPage() {
             <div className="flex items-center gap-2">
               {connectedAccounts.length > 0 ? (
                 <div className="flex items-center gap-2">
-                  {activeChannelId && (
+                  {isConnected('youtube') && (
                     <button
                       onClick={fetchYoutubeStats}
                       disabled={syncing}
@@ -94,7 +82,7 @@ export default function OverviewPage() {
                     <div className="flex -space-x-2">
                       {connectedAccounts.slice(0, 3).map((account) => (
                         <Image
-                          key={account.channelId}
+                          key={account.platform}
                           src={account.avatar}
                           alt={account.channelName}
                           width={24}
@@ -151,7 +139,7 @@ export default function OverviewPage() {
           </motion.div>
         )}
 
-        {/* Channel switcher */}
+        {/* Connected accounts bar */}
         {mounted && hasConnectedAccounts && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -159,53 +147,34 @@ export default function OverviewPage() {
             transition={{ duration: 0.4 }}
             className="glass-card rounded-xl p-4"
           >
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4 min-w-0">
-                <p className="text-sm font-medium whitespace-nowrap">Viewing</p>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {connectedAccounts.map((account) => {
-                    const isActive = account.channelId === activeChannelId
-                    return (
-                      <button
-                        key={account.channelId}
-                        onClick={() => handleSwitchChannel(account.channelId)}
-                        disabled={syncing && !isActive}
-                        className={cn(
-                          'flex items-center gap-2 px-3 py-1.5 rounded-full transition-all',
-                          isActive
-                            ? 'bg-gradient-to-r from-gradient-purple/20 to-gradient-pink/20 border border-gradient-purple/40'
-                            : 'bg-muted/50 border border-transparent hover:bg-muted',
-                          syncing && !isActive && 'opacity-50 cursor-not-allowed'
-                        )}
-                      >
-                        <Image
-                          src={account.avatar}
-                          alt={account.channelName}
-                          width={20}
-                          height={20}
-                          className="rounded-full"
-                        />
-                        <span className={cn(
-                          'text-xs font-medium truncate max-w-[140px]',
-                          isActive && 'text-foreground'
-                        )}>
-                          {account.channelName}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <p className="text-sm font-medium">Connected</p>
+                <div className="flex items-center gap-3">
+                  {connectedAccounts.map((account) => (
+                    <div key={account.platform} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
+                      <Image
+                        src={account.avatar}
+                        alt={account.channelName}
+                        width={20}
+                        height={20}
+                        className="rounded-full"
+                      />
+                      <span className="text-xs font-medium">{account.handle}</span>
+                      {account.followers > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {account.followers >= 1000000
+                            ? `${(account.followers / 1000000).toFixed(1)}M`
+                            : account.followers >= 1000
+                            ? `${(account.followers / 1000).toFixed(1)}K`
+                            : account.followers} subs
                         </span>
-                        {account.followers > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            {account.followers >= 1000000
-                              ? `${(account.followers / 1000000).toFixed(1)}M`
-                              : account.followers >= 1000
-                              ? `${(account.followers / 1000).toFixed(1)}K`
-                              : account.followers} subs
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-              <Link href="/settings" className="text-xs text-primary hover:underline whitespace-nowrap">
+              <Link href="/settings" className="text-xs text-primary hover:underline">
                 Manage
               </Link>
             </div>

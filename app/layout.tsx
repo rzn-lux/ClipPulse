@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'ClipPulse - Social Video Analytics',
-  description: 'AI-powered video analytics dashboard for content creators. Track performance across your YouTube channel.',
+  description: 'AI-powered video analytics dashboard for content creators. Track performance across TikTok, Instagram Reels, YouTube Shorts, and X.',
   generator: 'v0.app',
   icons: {
     icon: [

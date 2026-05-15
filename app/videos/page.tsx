@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout'
-import { VideoAnalyticsDrawer } from '@/components/dashboard/video-analytics-drawer'
-import { type Platform } from '@/lib/mock-data'
-import { useAccountStore, type YoutubeVideo } from '@/lib/account-store'
+import { VideoDetailDrawer } from '@/components/dashboard/video-detail-drawer'
+import { type Video, type Platform } from '@/lib/mock-data'
+import { useAccountStore } from '@/lib/account-store'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { Eye, Heart, MessageCircle, Share2, Video as VideoIcon, Plus, ExternalLink } from 'lucide-react'
+import { Eye, Heart, MessageCircle, Share2, Video as VideoIcon, Plus } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -20,25 +20,13 @@ function formatNumber(num: number): string {
 type Tab = 'all' | 'shorts' | 'videos'
 
 export default function VideosPage() {
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [tab, setTab] = useState<Tab>('all')
   const [sortBy, setSortBy] = useState<'views' | 'date'>('views')
   const [mounted, setMounted] = useState(false)
-  const [analyticsVideo, setAnalyticsVideo] = useState<YoutubeVideo | null>(null)
   const { youtubeStats } = useAccountStore()
 
   useEffect(() => { setMounted(true) }, [])
-
-  const openOnYoutube = (videoId: string, isShort: boolean) => {
-    const url = isShort
-      ? `https://www.youtube.com/shorts/${videoId}`
-      : `https://www.youtube.com/watch?v=${videoId}`
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
-
-  const openAnalytics = (videoId: string) => {
-    const v = youtubeStats?.videos.find(v => v.id === videoId)
-    if (v) setAnalyticsVideo(v)
-  }
 
   const realVideos = (youtubeStats?.videos ?? []).map(v => ({
     id: v.id,
@@ -187,10 +175,8 @@ export default function VideosPage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.02 }}
-                    onClick={() => openOnYoutube(video.id, video.isShort)}
-                    onContextMenu={(e) => { e.preventDefault(); openAnalytics(video.id) }}
-                    title="Click to open on YouTube · Right-click for analytics"
-                    className="group border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
+                    onClick={() => setSelectedVideo(video)}
+                    className="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
                   >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
@@ -203,14 +189,13 @@ export default function VideosPage() {
                             "w-16 h-9 rounded-lg flex-shrink-0",
                             index % 4 === 0 && "bg-gradient-to-br from-gradient-purple/30 to-gradient-pink/30",
                             index % 4 === 1 && "bg-gradient-to-br from-gradient-pink/30 to-gradient-orange/30",
-                            index % 4 === 2 && "bg-gradient-to-br from-youtube/30 to-gradient-purple/30",
+                            index % 4 === 2 && "bg-gradient-to-br from-tiktok/30 to-gradient-purple/30",
                             index % 4 === 3 && "bg-gradient-to-br from-youtube/30 to-gradient-orange/30"
                           )} />
                         )}
-                        <span className="text-sm font-medium line-clamp-1 max-w-[220px] group-hover:underline">
+                        <span className="text-sm font-medium line-clamp-1 max-w-[220px]">
                           {video.title}
                         </span>
-                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </td>
                     <td className="p-4">
@@ -248,17 +233,12 @@ export default function VideosPage() {
             </table>
           </div>
         </motion.div>
-
-        <p className="text-xs text-muted-foreground">
-          Tip: click a video to open it on YouTube · right-click for detailed analytics
-        </p>
       </div>
 
-      <VideoAnalyticsDrawer
-        video={analyticsVideo}
-        stats={youtubeStats}
-        open={!!analyticsVideo}
-        onClose={() => setAnalyticsVideo(null)}
+      <VideoDetailDrawer
+        video={selectedVideo}
+        open={!!selectedVideo}
+        onClose={() => setSelectedVideo(null)}
       />
     </DashboardLayout>
   )

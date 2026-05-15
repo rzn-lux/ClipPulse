@@ -16,7 +16,10 @@ import { viewsOverTime } from '@/lib/mock-data'
 import { BarChart3 } from 'lucide-react'
 
 const platformColors = {
+  tiktok: { stroke: '#00f2ea', fill: '#00f2ea' },
+  instagram: { stroke: '#e1306c', fill: '#e1306c' },
   youtube: { stroke: '#ff0000', fill: '#ff0000' },
+  twitter: { stroke: '#1da1f2', fill: '#1da1f2' },
 }
 
 interface CustomTooltipProps {
@@ -65,7 +68,9 @@ export function ViewsChart() {
 
   // Check if there's any actual data
   const hasData = useMemo(() => {
-    return viewsOverTime.some((day) => day.youtube > 0)
+    return viewsOverTime.some(
+      (day) => day.tiktok > 0 || day.instagram > 0 || day.youtube > 0 || day.twitter > 0
+    )
   }, [])
 
   if (isLoading) {
@@ -176,10 +181,34 @@ export function ViewsChart() {
             <Tooltip content={<CustomTooltip />} />
             <Area
               type="monotone"
+              dataKey="tiktok"
+              stackId="1"
+              stroke={platformColors.tiktok.stroke}
+              fill={`url(#gradient-tiktok)`}
+              strokeWidth={2}
+            />
+            <Area
+              type="monotone"
+              dataKey="instagram"
+              stackId="1"
+              stroke={platformColors.instagram.stroke}
+              fill={`url(#gradient-instagram)`}
+              strokeWidth={2}
+            />
+            <Area
+              type="monotone"
               dataKey="youtube"
               stackId="1"
               stroke={platformColors.youtube.stroke}
               fill={`url(#gradient-youtube)`}
+              strokeWidth={2}
+            />
+            <Area
+              type="monotone"
+              dataKey="twitter"
+              stackId="1"
+              stroke={platformColors.twitter.stroke}
+              fill={`url(#gradient-twitter)`}
               strokeWidth={2}
             />
           </AreaChart>

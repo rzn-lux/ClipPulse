@@ -3,13 +3,6 @@ import { auth } from '@/auth'
 
 export const dynamic = 'force-dynamic'
 
-function normalizeHandle(customUrl: string | undefined | null): string {
-  if (!customUrl) return ''
-  const trimmed = customUrl.trim().replace(/^\/+/, '').replace(/^(c\/|user\/|channel\/)/i, '')
-  if (!trimmed) return ''
-  return trimmed.startsWith('@') ? trimmed : `@${trimmed}`
-}
-
 export async function GET() {
   const session = await auth()
 
@@ -35,7 +28,7 @@ export async function GET() {
   const channel = data.items?.[0]
 
   if (!channel) {
-    return NextResponse.json({
+    return NextResponse.json({ 
       error: 'No YouTube channel found. Make sure this Google account has a YouTube channel.',
       code: 'NO_CHANNEL'
     }, { status: 404 })
@@ -44,12 +37,9 @@ export async function GET() {
   return NextResponse.json({
     channelId: channel.id,
     channelName: channel.snippet.title,
-    handle: normalizeHandle(channel.snippet.customUrl),
+    handle: channel.snippet.customUrl ?? `@${channel.snippet.title.replace(/\s+/g, '').toLowerCase()}`,
     avatar: channel.snippet.thumbnails?.default?.url ?? '',
     subscribers: parseInt(channel.statistics.subscriberCount ?? '0'),
     videoCount: parseInt(channel.statistics.videoCount ?? '0'),
-    accessToken: session.accessToken,
-    refreshToken: session.refreshToken ?? null,
-    expiresAt: session.expiresAt ?? null,
   })
 }
